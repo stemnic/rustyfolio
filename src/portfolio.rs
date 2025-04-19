@@ -13,6 +13,7 @@ pub enum Action {
 pub struct Stock {
     pub date: chrono::NaiveDate,
     pub price: f64,
+    pub currency: String,
     pub unit: f64,
     pub action: Action,
     pub metadata: String,

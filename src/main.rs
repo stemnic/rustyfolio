@@ -1,5 +1,6 @@
 mod importer;
 mod portfolio;
+mod tax;
 use importer::{EtradeImporter, ImporterService};
 use log::{error, info};
 use portfolio::{Portfolio, Positions, Stock};
@@ -7,6 +8,7 @@ use portfolio::{Portfolio, Positions, Stock};
 static MENU_OPTIONS: &str = r#"
     1. Show Position
     2. Import statement
+    3. Run Fifo calc
     9. Exit
     "#;
 static IMPORTER_SUBMENU_OPTIONS: &str = r#"
@@ -69,6 +71,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     _ => {}
                 }
+            }
+            "3" => {
+                tax::TaxCalculatorService::fifo_calculation(&portfolio);
             }
             "9" => {
                 break;

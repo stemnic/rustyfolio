@@ -270,6 +270,7 @@ impl EtradeImporter {
                             rsu_shares.push(Stock {
                                 date: date,
                                 price: price,
+                                currency: "USD".to_string(),
                                 unit: amount,
                                 action: Action::Buy,
                                 metadata: metadata_string,
@@ -320,6 +321,7 @@ impl EtradeImporter {
             let share = Stock {
                 date: date,
                 price: price,
+                currency: "USD".to_string(),
                 unit: amount,
                 action: Action::Buy,
                 metadata: metadata_string,
@@ -355,6 +357,7 @@ impl EtradeImporter {
             let share = Stock {
                 date: date,
                 price: price,
+                currency: "USD".to_string(),
                 unit: amount,
                 action: Action::Sell,
                 metadata: metadata_string,
