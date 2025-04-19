@@ -1,7 +1,9 @@
 use std::io::{Read, Write};
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 
+#[derive(PartialEq, Clone)]
 #[derive(Serialize, Deserialize)]
 #[derive(Debug)]
 pub enum Action {
@@ -9,27 +11,31 @@ pub enum Action {
     Sell,
 }
 
+#[derive(PartialEq, Clone)]
 #[derive(Serialize, Deserialize)]
 #[derive(Debug)]
 pub struct Stock {
-    price: usize,
-    unit: usize,
-    action: Action
+    pub date: chrono::NaiveDate,
+    pub price: f64,
+    pub unit: f64,
+    pub action: Action,
+    pub metadata: String
 }
 
+#[derive(PartialEq)]
 #[derive(Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Positions {
     pub ticker: String,
     pub shares: Vec<Stock>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Portfolio {
-    name: String,
-    description: String,
-    stocks: Vec<Positions>,
+    pub name: String,
+    pub description: String,
+    pub stocks: Vec<Positions>,
 }
 
 static PORTFOLO_CONFIG_FILE : &str = "test_portfolio.json";
@@ -40,7 +46,36 @@ impl Portfolio {
     }
 
     pub fn new_stock(&mut self, stock : Positions) -> Result<(), Box<dyn std::error::Error>>{
-        self.stocks.push(stock);
+        self.merge_postions(&vec![stock])?;
+        Ok(())
+    }
+
+    pub fn merge_postions(&mut self, to_be_merged_pos: &Vec<Positions>) -> Result<(), Box<dyn std::error::Error>> {
+        for imp_pos in to_be_merged_pos.iter() {
+            let mut ticker_exists = false;
+            for pos in self.stocks.iter_mut() {
+                if imp_pos.ticker == pos.ticker {
+                    ticker_exists = true;
+                    for imp_pos_stock in imp_pos.shares.iter() {
+                        let mut share_exist = false;
+                        for pos_stock in pos.shares.iter(){
+                            if (imp_pos_stock.metadata == pos_stock.metadata) && (imp_pos_stock.date == pos_stock.date) && (imp_pos_stock.price == pos_stock.price){
+                                share_exist = true;
+                                debug!("Share already exists {:?}", imp_pos_stock);
+                            }
+                        }
+                        if !share_exist {
+                            debug!("Adding share {:?} to {}", imp_pos_stock, pos.ticker);
+                            pos.shares.push(imp_pos_stock.clone());
+                        }
+                    }
+                }
+            }
+            if !ticker_exists {
+                debug!("Adding ticker {}", imp_pos.ticker);
+                self.stocks.push(Positions { ticker: imp_pos.ticker.clone(), shares: imp_pos.shares.clone() });
+            }
+        }
         Ok(())
     }
 
