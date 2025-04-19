@@ -1,9 +1,11 @@
-use calamine::{deserialize_as_f64_or_none, open_workbook, Error, Xlsx, Reader, RangeDeserializerBuilder};
-use std::{collections::HashMap};
-use serde::Deserialize;
+use calamine::{
+    Error, RangeDeserializerBuilder, Reader, Xlsx, deserialize_as_f64_or_none, open_workbook,
+};
 use log::{debug, info};
+use serde::Deserialize;
+use std::collections::HashMap;
 
-use crate::portfolio::{Positions, Stock, Action};
+use crate::portfolio::{Action, Positions, Stock};
 
 #[derive(Debug)]
 struct SimpleError(String);
@@ -17,11 +19,14 @@ impl std::fmt::Display for SimpleError {
 impl std::error::Error for SimpleError {}
 
 enum ImporterTypes {
-    ETrade
+    ETrade,
 }
 
 pub trait Importer {
-    fn import(&mut self, file_paths : Vec<String>) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>>;
+    fn import(
+        &mut self,
+        file_paths: Vec<String>,
+    ) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>>;
 }
 
 #[derive(Debug, Deserialize)]
@@ -106,7 +111,7 @@ struct GainAndLoss {
 }
 
 pub struct EtradeImporter {
-    positions : Vec<crate::Positions>,
+    positions: Vec<crate::Positions>,
     espp: Vec<EsppRecord>,
     rsugrant: Vec<RsuGrant>,
     rsugrantvest: Vec<RsuGrantVest>,
@@ -116,9 +121,16 @@ pub struct EtradeImporter {
 
 impl EtradeImporter {
     pub fn new() -> Self {
-        EtradeImporter { positions: vec![], espp: vec![], rsugrant: vec![], rsugrantvest: vec![], rsutax: vec![], gl_expanded: vec![]  }
+        EtradeImporter {
+            positions: vec![],
+            espp: vec![],
+            rsugrant: vec![],
+            rsugrantvest: vec![],
+            rsutax: vec![],
+            gl_expanded: vec![],
+        }
     }
-    fn parse_xlsx_file(&mut self, file_path : &str) -> Result<(), calamine::Error> {
+    fn parse_xlsx_file(&mut self, file_path: &str) -> Result<(), calamine::Error> {
         let mut workbook: Xlsx<_> = open_workbook(file_path)?;
         let espp = workbook.worksheet_range("ESPP");
         let rsu = workbook.worksheet_range("Restricted Stock");
@@ -133,9 +145,10 @@ impl EtradeImporter {
                 "Purchased Qty.",
                 "Grant Date FMV",
                 "Purchase Date FMV",
-            ]).from_range(&espp)?;
+            ])
+            .from_range(&espp)?;
             for val in iter {
-                if val.is_err(){
+                if val.is_err() {
                     continue;
                 }
                 let record: EsppRecord = val?;
@@ -147,13 +160,11 @@ impl EtradeImporter {
             debug!("rsu");
             let rsu = rsu?;
             // Finds RSU total issue
-            let iter = RangeDeserializerBuilder::with_headers(&[
-                "Symbol",
-                "Vested Qty.",
-                "Grant Number",
-            ]).from_range(&rsu)?;
+            let iter =
+                RangeDeserializerBuilder::with_headers(&["Symbol", "Vested Qty.", "Grant Number"])
+                    .from_range(&rsu)?;
             for val in iter {
-                if val.is_err(){
+                if val.is_err() {
                     continue;
                 }
                 let record: RsuGrant = val?;
@@ -168,13 +179,14 @@ impl EtradeImporter {
                 "Vest Date",
                 "Reason for cancelled qty",
                 "Released Qty",
-            ]).from_range(&rsu)?;
+            ])
+            .from_range(&rsu)?;
             for val in iter {
-                if val.is_err(){
+                if val.is_err() {
                     continue;
                 }
                 let record: RsuGrantVest = val?;
-                if record.cancel_reason.is_some(){
+                if record.cancel_reason.is_some() {
                     // Only filled when stock grant has been terminated, therefore they have never been granted
                     continue;
                 }
@@ -187,9 +199,10 @@ impl EtradeImporter {
                 "Grant Number",
                 "Vest Period",
                 "Taxable Gain",
-            ]).from_range(&rsu)?;
+            ])
+            .from_range(&rsu)?;
             for val in iter {
-                if val.is_err(){
+                if val.is_err() {
                     continue;
                 }
                 let record: RsuTax = val?;
@@ -208,9 +221,10 @@ impl EtradeImporter {
                 "Date Sold",
                 "Proceeds Per Share",
                 "Order Type",
-            ]).from_range(&gl_expanded)?;
+            ])
+            .from_range(&gl_expanded)?;
             for val in iter {
-                if val.is_err(){
+                if val.is_err() {
                     continue;
                 }
                 let record: GainAndLoss = val?;
@@ -224,32 +238,50 @@ impl EtradeImporter {
         // Check if we have as many rsugrant and rsutax entries
         debug!("Proccesing RSUs:");
         if self.rsugrantvest.len() != self.rsutax.len() {
-            return Err(Box::new(SimpleError("There is not an equal rsugran and rsutax entries".into())));
+            return Err(Box::new(SimpleError(
+                "There is not an equal rsugran and rsutax entries".into(),
+            )));
         }
         for rsugrant in self.rsugrant.iter() {
             let vest_total = rsugrant.total_vested.unwrap();
             let symbol = rsugrant.symbol.clone().unwrap();
-            let mut found_total  = 0.0;
+            let mut found_total = 0.0;
             let mut rsu_shares: Vec<Stock> = vec![];
             for rsugrantvest in self.rsugrantvest.iter() {
-                if rsugrant.grant_number == rsugrantvest.grant_number{
+                if rsugrant.grant_number == rsugrantvest.grant_number {
                     for rsutax in self.rsutax.iter() {
-                        if (rsugrantvest.grant_number == rsutax.grant_number) && (rsugrantvest.vest_period == rsutax.vest_period) {
-                            let date = chrono::NaiveDate::parse_from_str(rsugrantvest.vest_date.clone().unwrap().as_str(), "%m/%d/%Y")?;
+                        if (rsugrantvest.grant_number == rsutax.grant_number)
+                            && (rsugrantvest.vest_period == rsutax.vest_period)
+                        {
+                            let date = chrono::NaiveDate::parse_from_str(
+                                rsugrantvest.vest_date.clone().unwrap().as_str(),
+                                "%m/%d/%Y",
+                            )?;
                             let amount = rsugrantvest.release_qty.clone().unwrap();
-                            let price  = rsutax.taxable_gain.clone().unwrap() / amount;
+                            let price = rsutax.taxable_gain.clone().unwrap() / amount;
                             found_total = found_total + amount;
                             let grant_number = rsutax.grant_number.clone().unwrap();
                             let vest_period = rsutax.vest_period.clone().unwrap();
-                            info!("RSU {} {:?} {:?} {:?} {}-{}", symbol, date, amount, price, grant_number, vest_period);
-                            let metadata_string = format!("RSU-{}-{}",grant_number, vest_period);
-                            rsu_shares.push(Stock{date: date, price: price, unit: amount, action: Action::Buy, metadata: metadata_string});
+                            info!(
+                                "RSU {} {:?} {:?} {:?} {}-{}",
+                                symbol, date, amount, price, grant_number, vest_period
+                            );
+                            let metadata_string = format!("RSU-{}-{}", grant_number, vest_period);
+                            rsu_shares.push(Stock {
+                                date: date,
+                                price: price,
+                                unit: amount,
+                                action: Action::Buy,
+                                metadata: metadata_string,
+                            });
                         }
                     }
                 }
             }
             if vest_total != found_total {
-                return Err(Box::new(SimpleError("Did not find the correct numbers of RSUs".into())));
+                return Err(Box::new(SimpleError(
+                    "Did not find the correct numbers of RSUs".into(),
+                )));
             }
             let mut ticker_found = false;
             for position in self.positions.iter_mut() {
@@ -259,7 +291,10 @@ impl EtradeImporter {
                 }
             }
             if !ticker_found {
-                self.positions.push(Positions{ticker: symbol, shares: rsu_shares});
+                self.positions.push(Positions {
+                    ticker: symbol,
+                    shares: rsu_shares,
+                });
             }
         }
 
@@ -268,14 +303,27 @@ impl EtradeImporter {
     fn process_espp(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         for espp_action in self.espp.iter() {
             let symbol = espp_action.symbol.clone().unwrap();
-            let date = chrono::NaiveDate::parse_from_str(espp_action.purchase_date.clone().unwrap().as_str(), "%d-%b-%Y")?;
+            let date = chrono::NaiveDate::parse_from_str(
+                espp_action.purchase_date.clone().unwrap().as_str(),
+                "%d-%b-%Y",
+            )?;
             let amount = espp_action.purchased_qty.unwrap();
-            let price_string = espp_action.purchase_date_fmv.clone().unwrap().replace("$", "");
+            let price_string = espp_action
+                .purchase_date_fmv
+                .clone()
+                .unwrap()
+                .replace("$", "");
             let price: f64 = price_string.parse().unwrap();
-            
+
             info!("ESPP {} {:?} {:?} {:?}", symbol, date, amount, price);
             let metadata_string = format!("ESPP");
-            let share = Stock{ date: date, price: price, unit: amount, action: Action::Buy, metadata: metadata_string };
+            let share = Stock {
+                date: date,
+                price: price,
+                unit: amount,
+                action: Action::Buy,
+                metadata: metadata_string,
+            };
             let mut ticker_found = false;
             for position in self.positions.iter_mut() {
                 if position.ticker == symbol {
@@ -284,21 +332,33 @@ impl EtradeImporter {
                 }
             }
             if !ticker_found {
-                self.positions.push(Positions{ticker: symbol, shares: vec![share]});
+                self.positions.push(Positions {
+                    ticker: symbol,
+                    shares: vec![share],
+                });
             }
         }
         Ok(())
     }
     fn process_gl(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        for gl_action in self.gl_expanded.iter(){
+        for gl_action in self.gl_expanded.iter() {
             let symbol = gl_action.symbol.clone().unwrap();
-            let date = chrono::NaiveDate::parse_from_str(gl_action.date.clone().unwrap().as_str(), "%m/%d/%Y")?;
+            let date = chrono::NaiveDate::parse_from_str(
+                gl_action.date.clone().unwrap().as_str(),
+                "%m/%d/%Y",
+            )?;
             let amount = gl_action.num.unwrap();
             let price: f64 = gl_action.price.unwrap();
             let order_type = gl_action.order_type.clone().unwrap();
 
             let metadata_string = format!("{}", order_type);
-            let share = Stock{ date: date, price: price, unit: amount, action: Action::Sell, metadata: metadata_string };
+            let share = Stock {
+                date: date,
+                price: price,
+                unit: amount,
+                action: Action::Sell,
+                metadata: metadata_string,
+            };
             let mut ticker_found = false;
             for position in self.positions.iter_mut() {
                 if position.ticker == symbol {
@@ -307,7 +367,10 @@ impl EtradeImporter {
                 }
             }
             if !ticker_found {
-                self.positions.push(Positions{ticker: symbol, shares: vec![share]});
+                self.positions.push(Positions {
+                    ticker: symbol,
+                    shares: vec![share],
+                });
             }
         }
         Ok(())
@@ -315,7 +378,10 @@ impl EtradeImporter {
 }
 
 impl Importer for EtradeImporter {
-    fn import(&mut self, file_paths : Vec<String>) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>> {
+    fn import(
+        &mut self,
+        file_paths: Vec<String>,
+    ) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>> {
         // Need BenefitHistory.xlsx and G&L_Expanded.xlsx
         for file in file_paths.iter() {
             self.parse_xlsx_file(file)?;
@@ -329,15 +395,18 @@ impl Importer for EtradeImporter {
     }
 }
 
-pub struct ImporterService <I : Importer> {
-    importer : I
+pub struct ImporterService<I: Importer> {
+    importer: I,
 }
 
 impl<I: Importer> ImporterService<I> {
-    pub fn new_importer(imp : I) -> Result<Self, Box<dyn std::error::Error>>{
-        Ok(ImporterService{ importer :  imp})
+    pub fn new_importer(imp: I) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(ImporterService { importer: imp })
     }
-    pub fn run(&mut self, file_paths : Vec<String>) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>> {
+    pub fn run(
+        &mut self,
+        file_paths: Vec<String>,
+    ) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>> {
         self.importer.import(file_paths)
     }
 }
@@ -350,12 +419,18 @@ mod tests {
     use super::*;
 
     fn init() -> Result<Portfolio, std::io::Error> {
-        let _ = env_logger::builder().is_test(true).filter_level(log::LevelFilter::Trace).try_init();
-        let test_portfolio = format!("{}/test_files/test_portfolio.json", env!("CARGO_MANIFEST_DIR"));
+        let _ = env_logger::builder()
+            .is_test(true)
+            .filter_level(log::LevelFilter::Trace)
+            .try_init();
+        let test_portfolio = format!(
+            "{}/test_files/test_portfolio.json",
+            env!("CARGO_MANIFEST_DIR")
+        );
         let mut file = std::fs::File::open(test_portfolio)?;
         let mut porfolio_data = String::new();
         file.read_to_string(&mut porfolio_data)?;
-        let port : Portfolio = serde_json::from_str(porfolio_data.as_str())?;
+        let port: Portfolio = serde_json::from_str(porfolio_data.as_str())?;
         Ok(port)
     }
 
@@ -363,12 +438,18 @@ mod tests {
     fn test_etrade_importer() {
         let test_portfolio = init().unwrap();
         let etrade = EtradeImporter::new();
-        let mut importer = ImporterService::new_importer(etrade).expect("Creating Etrade importer failed");
-        let benifit_history = format!("{}/test_files/G&L_Expanded.xlsx", env!("CARGO_MANIFEST_DIR"));
-        let gl_expanded = format!("{}/test_files/BenefitHistory.xlsx", env!("CARGO_MANIFEST_DIR"));
+        let mut importer =
+            ImporterService::new_importer(etrade).expect("Creating Etrade importer failed");
+        let benifit_history = format!(
+            "{}/test_files/G&L_Expanded.xlsx",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let gl_expanded = format!(
+            "{}/test_files/BenefitHistory.xlsx",
+            env!("CARGO_MANIFEST_DIR")
+        );
         let res = importer.run(vec![benifit_history, gl_expanded]).unwrap();
         debug!("{:?}", res);
         assert_eq!(res, &test_portfolio.stocks);
     }
 }
-

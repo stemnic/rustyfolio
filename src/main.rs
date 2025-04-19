@@ -1,8 +1,8 @@
-mod portfolio;
 mod importer;
+mod portfolio;
+use importer::{EtradeImporter, ImporterService};
+use log::{error, info};
 use portfolio::{Portfolio, Positions, Stock};
-use importer::{ImporterService, EtradeImporter};
-use log::{info, error};
 
 static MENU_OPTIONS: &str = r#"
     1. Show Position
@@ -16,7 +16,9 @@ static IMPORTER_SUBMENU_OPTIONS: &str = r#"
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     //env_logger::init();
-    let _ = env_logger::builder().filter_level(log::LevelFilter::Trace).try_init();
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Trace)
+        .try_init();
     let mut portfolio = Portfolio::new().expect("Failed to create portfolio");
     println!("Welcome to rustyfolio! What do you want todo?");
     portfolio.load_from_disk()?;
@@ -29,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         match buffer.as_str() {
             "1" => {
                 println!("tbd");
-            },
+            }
             "2" => {
                 println!("{}", IMPORTER_SUBMENU_OPTIONS);
                 let mut buffer = String::new();
@@ -53,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let mut invalid_files = false;
                         for f in files.iter() {
                             let path = std::path::Path::new(f);
-                            if !path.is_file(){
+                            if !path.is_file() {
                                 invalid_files = true;
                                 error!("{} is not a valid file", path.to_str().unwrap());
                             }
@@ -64,7 +66,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             let imported_port = importer.run(files)?;
                             portfolio.merge_postions(imported_port)?;
                         }
-                        
                     }
                     _ => {}
                 }
