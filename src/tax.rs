@@ -33,7 +33,7 @@ impl TaxCalculatorService {
             let mut sum_shares_sold = 0.0;
             let mut sum_gains_loss = 0.0;
             output_string = format!(
-                "Date,UnitsSold,GainOrLoss,BuyPrice,SellPrice,Diff,Profit,Currency,SellMetadata"
+                "Ticker,Date,UnitsSold,GainOrLoss,BuyPrice,SellPrice,Diff,Profit,Currency,SellMetadata"
             );
             for sell_stock in sell.iter_mut() {
                 year = sell_stock.date.year();
@@ -71,8 +71,9 @@ impl TaxCalculatorService {
                         buy_pos.currency
                     );
                     output_string = format!(
-                        "{}\n{},{},{},{},{},{},{},{},{}",
+                        "{}\n{},{},{},{},{},{},{},{},{},{}",
                         output_string,
+                        ticker.ticker,
                         sell_stock.date,
                         unit_sold,
                         g_lstring,
