@@ -7,6 +7,8 @@ use std::collections::HashMap;
 
 use crate::portfolio::{Action, Positions, Stock};
 
+use super::Importer;
+
 #[derive(Debug)]
 struct SimpleError(String);
 
@@ -17,17 +19,6 @@ impl std::fmt::Display for SimpleError {
 }
 
 impl std::error::Error for SimpleError {}
-
-enum ImporterTypes {
-    ETrade,
-}
-
-pub trait Importer {
-    fn import(
-        &mut self,
-        file_paths: Vec<String>,
-    ) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>>;
-}
 
 #[derive(Debug, Deserialize)]
 struct EsppRecord {
@@ -393,29 +384,13 @@ impl Importer for EtradeImporter {
         self.process_espp()?;
         self.process_gl()?;
 
-        //todo!("ETrade importer not implemented");
         Ok(&self.positions)
-    }
-}
-
-pub struct ImporterService<I: Importer> {
-    importer: I,
-}
-
-impl<I: Importer> ImporterService<I> {
-    pub fn new_importer(imp: I) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(ImporterService { importer: imp })
-    }
-    pub fn run(
-        &mut self,
-        file_paths: Vec<String>,
-    ) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>> {
-        self.importer.import(file_paths)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::importer::ImporterService;
     use crate::portfolio::{Portfolio, Positions};
     use std::io::Read;
 
