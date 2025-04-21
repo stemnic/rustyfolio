@@ -1,18 +1,10 @@
+mod csv;
 mod etrade;
 
-use calamine::{
-    Error, RangeDeserializerBuilder, Reader, Xlsx, deserialize_as_f64_or_none, open_workbook,
-};
 use log::{debug, info};
-use serde::Deserialize;
-use std::collections::HashMap;
 
+pub use crate::importer::csv::CsvImporter;
 pub use crate::importer::etrade::EtradeImporter;
-use crate::portfolio::{Action, Positions, Stock};
-
-enum ImporterTypes {
-    ETrade,
-}
 
 pub trait Importer {
     fn import(

@@ -1,9 +1,6 @@
-use calamine::{
-    Error, RangeDeserializerBuilder, Reader, Xlsx, deserialize_as_f64_or_none, open_workbook,
-};
+use calamine::{RangeDeserializerBuilder, Reader, Xlsx, deserialize_as_f64_or_none, open_workbook};
 use log::{debug, info};
 use serde::Deserialize;
-use std::collections::HashMap;
 
 use crate::portfolio::{Action, Positions, Stock};
 
@@ -402,7 +399,7 @@ mod tests {
             .filter_level(log::LevelFilter::Trace)
             .try_init();
         let test_portfolio = format!(
-            "{}/test_files/test_portfolio.json",
+            "{}/test_files/test_portfolio_etrade.json",
             env!("CARGO_MANIFEST_DIR")
         );
         let mut file = std::fs::File::open(test_portfolio)?;
