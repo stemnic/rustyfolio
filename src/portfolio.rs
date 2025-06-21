@@ -33,6 +33,7 @@ pub struct Portfolio {
 }
 
 static PORTFOLO_CONFIG_FILE: &str = "test_portfolio.json";
+static PORTFOLO_CONFIG_FILE_CSV: &str = "test_portfolio.csv";
 
 impl Portfolio {
     pub fn new() -> Result<Portfolio, Box<dyn std::error::Error>> {
@@ -108,6 +109,33 @@ impl Portfolio {
         let portfolio_json = serde_json::to_string(self)?;
         let mut file = File::create(PORTFOLO_CONFIG_FILE)?;
         file.write_all(portfolio_json.as_bytes())?;
+        Ok(())
+    }
+    pub fn export_csv_to_disk(&self) -> Result<(), std::io::Error> {
+        let mut output_string = String::new();
+
+        output_string = ("Ticker,Date,Units,Price,Value,Action,Currency,Metadata").to_string();
+        for pos in self.stocks.iter() {
+            for ticker in pos.shares.iter() {
+                output_string = format!(
+                    "{}\n{},{},{},{},{},{},{},{}",
+                    output_string,
+                    pos.ticker,
+                    ticker.date,
+                    ticker.unit,
+                    ticker.price,
+                    ticker.price * ticker.unit,
+                    match ticker.action {
+                        Action::Buy => "Buy",
+                        Action::Sell => "Sell",
+                    },
+                    ticker.currency,
+                    ticker.metadata
+                )
+            }
+        }
+        let mut file = File::create(PORTFOLO_CONFIG_FILE_CSV)?;
+        file.write_all(output_string.as_bytes())?;
         Ok(())
     }
 }

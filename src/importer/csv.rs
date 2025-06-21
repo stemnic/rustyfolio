@@ -21,7 +21,7 @@ impl CsvImporter {
 impl Importer for CsvImporter {
     fn import(
         &mut self,
-        file_paths: Vec<String>,
+        file_paths: &Vec<String>,
     ) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>> {
         for file in file_paths.iter() {
             CsvImporter::import_csv(file)?;
@@ -63,7 +63,7 @@ mod tests {
         let mut importer =
             ImporterService::new_importer(csvimporter).expect("Creating CSV importer failed");
         let custom_csv = format!("{}/test_files/custom.csv", env!("CARGO_MANIFEST_DIR"));
-        let res = importer.run(vec![custom_csv]).unwrap();
+        let res = importer.run(&vec![custom_csv]).unwrap();
         debug!("{:?}", res);
         assert_eq!(res, &test_portfolio.stocks);
     }

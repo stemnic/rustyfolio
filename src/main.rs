@@ -9,6 +9,7 @@ static MENU_OPTIONS: &str = r#"
     1. Show Position
     2. Import statement
     3. Run Fifo calc
+    4. Export portfolio to csv
     9. Exit
     "#;
 static IMPORTER_SUBMENU_OPTIONS: &str = r#"
@@ -65,7 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         if !invalid_files {
                             let imp = EtradeImporter::new();
                             let mut importer = ImporterService::new_importer(imp)?;
-                            let imported_port = importer.run(files)?;
+                            let imported_port = importer.run(&files)?;
                             portfolio.merge_postions(imported_port)?;
                         }
                     }
@@ -74,6 +75,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "3" => {
                 tax::TaxCalculatorService::fifo_calculation(&portfolio);
+            }
+            "4" => {
+                portfolio.export_csv_to_disk()?;
             }
             "9" => {
                 break;

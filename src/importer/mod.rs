@@ -9,7 +9,7 @@ pub use crate::importer::etrade::EtradeImporter;
 pub trait Importer {
     fn import(
         &mut self,
-        file_paths: Vec<String>,
+        file_paths: &Vec<String>,
     ) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>>;
 }
 
@@ -23,7 +23,7 @@ impl<I: Importer> ImporterService<I> {
     }
     pub fn run(
         &mut self,
-        file_paths: Vec<String>,
+        file_paths: &Vec<String>,
     ) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>> {
         self.importer.import(file_paths)
     }

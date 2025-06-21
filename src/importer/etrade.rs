@@ -371,7 +371,7 @@ impl EtradeImporter {
 impl Importer for EtradeImporter {
     fn import(
         &mut self,
-        file_paths: Vec<String>,
+        file_paths: &Vec<String>,
     ) -> Result<&Vec<crate::Positions>, Box<dyn std::error::Error>> {
         // Need BenefitHistory.xlsx and G&L_Expanded.xlsx
         for file in file_paths.iter() {
@@ -423,7 +423,7 @@ mod tests {
             "{}/test_files/BenefitHistory.xlsx",
             env!("CARGO_MANIFEST_DIR")
         );
-        let res = importer.run(vec![benifit_history, gl_expanded]).unwrap();
+        let res = importer.run(&vec![benifit_history, gl_expanded]).unwrap();
         debug!("{:?}", res);
         assert_eq!(res, &test_portfolio.stocks);
     }

@@ -32,9 +32,9 @@ impl TaxCalculatorService {
             let mut last_year = 0;
             let mut sum_shares_sold = 0.0;
             let mut sum_gains_loss = 0.0;
-            output_string = format!(
+            output_string = (
                 "Ticker,Date,UnitsSold,GainOrLoss,BuyPrice,SellPrice,Diff,Profit,Currency,SellMetadata"
-            );
+            ).to_string();
             for sell_stock in sell.iter_mut() {
                 year = sell_stock.date.year();
                 if last_year != year {
@@ -49,8 +49,8 @@ impl TaxCalculatorService {
 
                     let mut unit_sold = sell_stock.unit;
                     let old_buy = buy_pos.unit;
-                    buy_pos.unit = buy_pos.unit - sell_stock.unit;
-                    sell_stock.unit = sell_stock.unit - old_buy;
+                    buy_pos.unit -= sell_stock.unit;
+                    sell_stock.unit -= old_buy;
                     if buy_pos.currency != sell_stock.currency {
                         todo!("Implement currency conversion logic.")
                     }
@@ -84,8 +84,8 @@ impl TaxCalculatorService {
                         buy_pos.currency,
                         sell_stock.metadata
                     );
-                    sum_gains_loss = sum_gains_loss + (gains * unit_sold);
-                    sum_shares_sold = sum_shares_sold + unit_sold;
+                    sum_gains_loss += gains * unit_sold;
+                    sum_shares_sold += unit_sold;
                     if buy_pos.unit > 0.0 {
                         buy.push(buy_pos);
                     }
