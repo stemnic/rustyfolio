@@ -86,7 +86,7 @@ struct GainAndLoss {
     event: Option<String>,
     #[serde(rename = "Symbol")]
     symbol: Option<String>,
-    #[serde(rename = "Qty.")]
+    #[serde(rename = "Quantity")]
     #[serde(deserialize_with = "deserialize_as_f64_or_none")]
     num: Option<f64>,
     #[serde(rename = "Date Sold")]
@@ -205,7 +205,7 @@ impl EtradeImporter {
             let iter = RangeDeserializerBuilder::with_headers(&[
                 "Record Type",
                 "Symbol",
-                "Qty.",
+                "Quantity",
                 "Date Sold",
                 "Proceeds Per Share",
                 "Order Type",

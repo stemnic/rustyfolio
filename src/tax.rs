@@ -94,6 +94,7 @@ impl TaxCalculatorService {
             }
             info!("{}: {} {}", year, sum_shares_sold, sum_gains_loss);
             debug!("{:?}", buy.last());
+            debug!("Remaining in queue {}", buy.len());
             Self::overwrite_to_output_file(output_string.as_str());
         }
     }
